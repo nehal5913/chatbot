@@ -132,12 +132,14 @@ const DocumentManager: React.FC = () => {
       <div className="px-6 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <h2 className={`font-semibold text-neutral-900 dark:text-white ${fontSizeClass}`}>
+            <h2 className={`font-semibold text-slate-900 dark:text-white ${fontSizeClass}`}>
               Documents
             </h2>
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
-              {selectedDocuments.length} of {documents.length} selected
-            </span>
+            {documents.length > 0 && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                {selectedDocuments.length} of {documents.length} selected
+              </span>
+            )}
           </div>
           
           {documents.length > 0 && (
@@ -188,9 +190,71 @@ const DocumentManager: React.FC = () => {
         </div>
       </div>
 
+      {/* Selected Documents Display */}
+      {selectedDocuments.length > 0 && (
+        <div className="px-6 py-3 bg-primary-50 dark:bg-primary-900/10 border-b border-primary-100 dark:border-primary-800/50">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className={`font-medium text-primary-900 dark:text-primary-100 ${fontSizeClass}`}>
+              Active Documents ({selectedDocuments.length})
+            </h3>
+            <button
+              onClick={deselectAllDocuments}
+              className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 transition-colors"
+            >
+              Clear All
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {selectedDocuments.map((docId) => {
+              const doc = documents.find(d => d.id === docId);
+              if (!doc) return null;
+              return (
+                <div
+                  key={docId}
+                  className="flex items-center space-x-2 bg-white dark:bg-slate-800 px-3 py-2 rounded-lg border border-primary-200 dark:border-primary-700 shadow-sm"
+                >
+                  {getFileIcon(doc.type)}
+                  <span className={`text-slate-900 dark:text-white font-medium ${
+                    fontSize === 'small' ? 'text-sm' : fontSize === 'large' ? 'text-base' : 'text-sm'
+                  }`}>
+                    {doc.name.length > 25 ? `${doc.name.slice(0, 25)}...` : doc.name}
+                  </span>
+                  <button
+                    onClick={() => toggleDocumentSelection(docId)}
+                    className="p-1 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 transition-colors"
+                    title="Remove from selection"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          <p className={`mt-2 text-primary-700 dark:text-primary-300 ${
+            fontSize === 'small' ? 'text-xs' : fontSize === 'large' ? 'text-sm' : 'text-xs'
+          }`}>
+            💡 These documents will be used to answer your questions
+          </p>
+        </div>
+      )}
+
       {/* Expanded Document List */}
       {isExpanded && (
-        <div className="px-6 pb-4 border-t border-neutral-100 dark:border-neutral-700">
+        <div className="px-6 pb-4 border-t border-slate-100 dark:border-slate-700">
+          <div className="flex items-center justify-between mt-4 mb-3">
+            <h3 className={`font-medium text-slate-900 dark:text-white ${fontSizeClass}`}>
+              All Documents
+            </h3>
+            {documents.length > 0 && (
+              <div className="flex items-center space-x-2">
+                <span className={`text-slate-500 dark:text-slate-400 ${
+                  fontSize === 'small' ? 'text-xs' : fontSize === 'large' ? 'text-sm' : 'text-xs'
+                }`}>
+                  Click to select/deselect
+                </span>
+              </div>
+            )}
+          </div>
           {documents.length === 0 ? (
             <div
               className={`mt-4 border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
@@ -220,22 +284,26 @@ const DocumentManager: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="mt-4 space-y-2 max-h-64 overflow-y-auto">
+            <div className="space-y-2 max-h-64 overflow-y-auto">
               {documents.map((doc) => (
                 <div
                   key={doc.id}
-                  className={`flex items-center space-x-3 p-3 rounded-lg border transition-colors ${
+                  className={`flex items-center space-x-3 p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
                     selectedDocuments.includes(doc.id)
-                      ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800'
-                      : 'bg-neutral-50 dark:bg-neutral-700/50 border-neutral-200 dark:border-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                      ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800 shadow-sm'
+                      : 'bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-500'
                   }`}
+                  onClick={() => toggleDocumentSelection(doc.id)}
                 >
                   <div className="flex items-center space-x-3 flex-1 min-w-0">
                     <input
                       type="checkbox"
                       checked={selectedDocuments.includes(doc.id)}
-                      onChange={() => toggleDocumentSelection(doc.id)}
-                      className="w-4 h-4 text-primary-600 bg-neutral-100 border-neutral-300 rounded focus:ring-primary-500 focus:ring-2"
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        toggleDocumentSelection(doc.id);
+                      }}
+                      className="w-4 h-4 text-primary-600 bg-slate-100 border-slate-300 rounded focus:ring-primary-500 focus:ring-2"
                     />
                     {getFileIcon(doc.type)}
                     <div className="flex-1 min-w-0">
@@ -250,8 +318,8 @@ const DocumentManager: React.FC = () => {
                     </div>
                   </div>
                   <button
-                    onClick={() => removeDocument(doc.id)}
-                    className="p-1 text-neutral-400 hover:text-red-500 transition-colors"
+                    onClick={(e) => { e.stopPropagation(); removeDocument(doc.id); }}
+                    className="p-1 text-slate-400 hover:text-red-500 transition-colors"
                     title="Remove document"
                   >
                     <X className="w-4 h-4" />
