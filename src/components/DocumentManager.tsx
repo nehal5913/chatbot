@@ -31,6 +31,7 @@ const DocumentManager: React.FC = () => {
   const [newNAS, setNewNAS] = useState({ name: '', host: '', username: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [isNASExpanded, setIsNASExpanded] = useState(false);
 
   const fontSizeClass = {
     small: 'text-sm',
@@ -179,6 +180,7 @@ const DocumentManager: React.FC = () => {
             <Server className="w-4 h-4" />
             <span className={fontSizeClass}>NAS</span>
             {currentNAS && <div className="w-2 h-2 bg-secondary-500 rounded-full"></div>}
+            {showNASPanel ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </button>
           
           <button
@@ -333,11 +335,18 @@ const DocumentManager: React.FC = () => {
 
       {/* NAS Panel */}
       {showNASPanel && (
-        <div className="px-6 py-4 bg-neutral-50 dark:bg-neutral-900/50 border-t border-neutral-200 dark:border-neutral-700">
+        <div className="px-6 py-4 bg-neutral-50 dark:bg-neutral-900/50 border-t border-neutral-200 dark:border-neutral-700 transition-all duration-300">
           <div className="flex items-center justify-between mb-4">
-            <h3 className={`font-semibold text-neutral-900 dark:text-white ${fontSizeClass}`}>
-              NAS Drive Management
-            </h3>
+            <div className="flex items-center space-x-3">
+              <h3 className={`font-semibold text-neutral-900 dark:text-white ${fontSizeClass}`}>
+                NAS Drive Management
+              </h3>
+              {currentNAS && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-secondary-100 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400">
+                  Connected
+                </span>
+              )}
+            </div>
             <button
               onClick={() => setShowAddNAS(!showAddNAS)}
               className="flex items-center space-x-1 px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-lg hover:bg-primary-200 dark:hover:bg-primary-900/50 transition-colors"
@@ -392,38 +401,58 @@ const DocumentManager: React.FC = () => {
           )}
 
           {/* NAS Connections */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            {nasConnections.map((nas) => (
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-medium text-neutral-900 dark:text-white">Available Connections</h4>
+              <button
+                onClick={() => setIsNASExpanded(!isNASExpanded)}
+                className="flex items-center space-x-1 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors"
+              >
+                <span>{isNASExpanded ? 'Collapse' : 'Expand'}</span>
+                {isNASExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+            </div>
+            
+            {/* Always show connected NAS */}
+            {nasConnections.filter(nas => nas.isConnected).map((nas) => (
               <div
                 key={nas.id}
-                className={`p-4 rounded-lg border transition-all duration-200 ${
-                  nas.isConnected
-                    ? 'bg-secondary-50 dark:bg-secondary-900/20 border-secondary-200 dark:border-secondary-800'
-                    : 'bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
-                }`}
+                className="p-4 rounded-lg border bg-secondary-50 dark:bg-secondary-900/20 border-secondary-200 dark:border-secondary-800 mb-3"
               >
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium text-neutral-900 dark:text-white">{nas.name}</h4>
                   <div className="flex items-center space-x-2">
-                    {nas.isConnected ? (
-                      <Wifi className="w-4 h-4 text-secondary-500" />
-                    ) : (
-                      <WifiOff className="w-4 h-4 text-neutral-400" />
-                    )}
+                    <Wifi className="w-4 h-4 text-secondary-500" />
+                    <span className="text-xs text-secondary-600 dark:text-secondary-400 font-medium">Connected</span>
                   </div>
                 </div>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">
                   {nas.host} • {nas.username}
                 </p>
-                <div className="flex space-x-2">
-                  {nas.isConnected ? (
-                    <button
-                      onClick={() => disconnectFromNAS(nas.id)}
-                      className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded text-sm hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                    >
-                      Disconnect
-                    </button>
-                  ) : (
+                <button
+                  onClick={() => disconnectFromNAS(nas.id)}
+                  className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded text-sm hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                >
+                  Disconnect
+                </button>
+              </div>
+            ))}
+            
+            {/* Collapsible section for other connections */}
+            {isNASExpanded && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {nasConnections.filter(nas => !nas.isConnected).map((nas) => (
+                  <div
+                    key={nas.id}
+                    className="p-4 rounded-lg border bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 transition-all duration-200"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-neutral-900 dark:text-white">{nas.name}</h4>
+                      <WifiOff className="w-4 h-4 text-neutral-400" />
+                    </div>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">
+                      {nas.host} • {nas.username}
+                    </p>
                     <button
                       onClick={() => handleConnectNAS(nas.id)}
                       disabled={isSearching}
@@ -431,11 +460,31 @@ const DocumentManager: React.FC = () => {
                     >
                       {isSearching ? 'Connecting...' : 'Connect'}
                     </button>
-                  )}
-                </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
+            
+            {/* Show expand button if there are disconnected connections */}
+            {!isNASExpanded && nasConnections.filter(nas => !nas.isConnected).length > 0 && (
+              <div className="text-center">
+                <button
+                  onClick={() => setIsNASExpanded(true)}
+                  className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 transition-colors"
+                >
+                  Show {nasConnections.filter(nas => !nas.isConnected).length} more connection{nasConnections.filter(nas => !nas.isConnected).length !== 1 ? 's' : ''}
+                </button>
+              </div>
+            )}
           </div>
+          
+          {/* Compact NAS connections for when collapsed */}
+          {!isNASExpanded && nasConnections.filter(nas => !nas.isConnected).length === 0 && nasConnections.filter(nas => nas.isConnected).length === 0 && (
+            <div className="text-center py-4">
+              <Server className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">No NAS connections configured</p>
+            </div>
+          )}
 
           {/* NAS Search */}
           {currentNAS && (
